@@ -1,65 +1,10 @@
 import "./App.css";
-import React, { useEffect, useState, useCallback } from "react";
+import Details from "./components/Details";
+import Items from "./components/Items";
+import Search from "./components/Search";
+import React, { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import axios from "axios";
-import _ from "lodash";
-let items = [],
-  queryResult = [];
-
-function Details({ detailsItem }) {
-  return (
-    <div className="c-details">
-      <div className="c-subtitle">Details:</div>
-      <table className="c-table">
-        <tbody>
-          <tr>
-            <th>User Id</th>
-            <th>Id</th>
-            <th>Text</th>
-            <th>Completed</th>
-          </tr>
-          <tr key={detailsItem.id}>
-            <td>{detailsItem.userId}</td>
-            <td>{detailsItem.id}</td>
-            <td>{detailsItem.title}</td>
-            <td>{detailsItem.completed.toString()}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Search({ searchQuery }) {
-  const delayedQuery = useCallback(
-    _.debounce((q) => searchQuery(q), 500),
-    []
-  );
-  return (
-    <input type="text" onChange={delayedQuery} placeholder="Search..."></input>
-  );
-}
-
-function Items({ currentItems, passedFunction }) {
-  return (
-    <div>
-      {currentItems && currentItems.length > 0 ? (
-        <table className="c-table">
-          <tbody>
-            {currentItems.map((item) => (
-              <tr key={item.id} onClick={() => passedFunction(item)}>
-                <td>{item.id}</td>
-                <td>{item.title}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <h2>No results</h2>
-      )}
-    </div>
-  );
-}
 
 function App({ itemsPerPage }) {
   const [data, setData] = useState([]);
@@ -68,16 +13,17 @@ function App({ itemsPerPage }) {
   const [itemOffset, setItemOffset] = useState(0);
   const [currentPage, setcurrentPage] = useState(0);
   const [query, setQuery] = useState("");
-
-  const detailsItemInitial = {
+  let [queryResult, setQueryResult] = useState([]);
+  const [detailsItem, updateDetails] = useState({
     userId: 1,
     id: 1,
     title: "Initial data",
     completed: false,
-  };
-  const [detailsItem, updateDetails] = useState(detailsItemInitial);
+  });
 
-  const passedFunction = (event) => {
+  let items = [];
+
+  const onSearch = (event) => {
     (async () => {
       try {
         const result = await axios(
@@ -92,11 +38,12 @@ function App({ itemsPerPage }) {
   };
 
   const searchQuery = (event) => {
-    const queryString = window.location.search;
+    const queryString = event.target.value;
     queryResult = [];
+    setQueryResult(queryResult);
 
     if (event.target.value === "") {
-      queryResult = items;
+      setQueryResult([]);
     } else {
       items.forEach((item) => {
         if (item.title.includes(event.target.value)) {
@@ -106,31 +53,33 @@ function App({ itemsPerPage }) {
     }
 
     if (queryString) {
-      const urlParams = new URLSearchParams(queryString);
-      const currentPage = Number(urlParams.get("page") - 1);
-      const newOffset = (currentPage * itemsPerPage) % queryResult.length;
-      const endOffset = newOffset + itemsPerPage;
-      setItemOffset(newOffset);
-      setCurrentItems(queryResult.slice(itemOffset, endOffset));
-      setcurrentPage(currentPage);
+      setCurrentItems(queryResult.slice(0, itemsPerPage));
+      setPageCount(Math.ceil(queryResult.length / itemsPerPage));
     } else {
-      const endOffset = itemOffset + itemsPerPage;
-      setCurrentItems(queryResult.slice(itemOffset, endOffset));
-      setcurrentPage(0);
+      setCurrentItems(items.slice(0, itemsPerPage));
+      setPageCount(Math.ceil(items.length / itemsPerPage));
     }
-    setPageCount(Math.ceil(queryResult.length / itemsPerPage));
+
+    setItemOffset(itemsPerPage);
+    setcurrentPage(0);
     setQuery(event.target.value);
   };
 
   useEffect(async () => {
     try {
-      const queryString = window.location.search;
+      const urlData = window.location.search;
       const result = await axios("https://jsonplaceholder.typicode.com/todos");
-      setData(result.data);
-      items = result.data;
 
-      if (queryString) {
-        const urlParams = new URLSearchParams(queryString);
+      if (queryResult.length === 0) {
+        setData(result.data);
+        items = result.data;
+      } else {
+        setData(queryResult);
+        items = queryResult;
+      }
+
+      if (urlData) {
+        const urlParams = new URLSearchParams(urlData);
         const currentPage = Number(urlParams.get("page") - 1);
         const newOffset = (currentPage * itemsPerPage) % items.length;
         const endOffset = newOffset + itemsPerPage;
@@ -138,8 +87,8 @@ function App({ itemsPerPage }) {
         setCurrentItems(items.slice(itemOffset, endOffset));
         setcurrentPage(currentPage);
       } else {
-        const endOffset = itemOffset + itemsPerPage;
-        setCurrentItems(items.slice(itemOffset, endOffset));
+        setItemOffset(itemsPerPage);
+        setCurrentItems(items.slice(0, itemsPerPage));
         setcurrentPage(0);
       }
 
@@ -150,8 +99,6 @@ function App({ itemsPerPage }) {
   }, [itemOffset, itemsPerPage]);
 
   const handlePageClick = (event) => {
-    const newOffset = (event.selected * itemsPerPage) % items.length;
-
     if (event.selected > 0) {
       let refresh =
         window.location.protocol +
@@ -170,13 +117,13 @@ function App({ itemsPerPage }) {
       window.history.pushState({ path: refresh }, "", refresh);
     }
 
-    setItemOffset(newOffset);
+    setItemOffset();
   };
 
   return (
     <div className="c-wrapper">
       <div className="c-column">
-        <Items currentItems={currentItems} passedFunction={passedFunction} />
+        <Items currentItems={currentItems} onSearch={onSearch} />
         <ReactPaginate
           className="c-pagination"
           breakLabel="..."
