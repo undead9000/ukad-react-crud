@@ -38,7 +38,7 @@ function App({ itemsPerPage }) {
   };
 
   const searchQuery = (event) => {
-    const queryString = event.target.value;
+    const query = event.target.value;
     queryResult = [];
     setQueryResult(queryResult);
 
@@ -52,7 +52,7 @@ function App({ itemsPerPage }) {
       });
     }
 
-    if (queryString) {
+    if (query) {
       setCurrentItems(queryResult.slice(0, itemsPerPage));
       setPageCount(Math.ceil(queryResult.length / itemsPerPage));
     } else {
