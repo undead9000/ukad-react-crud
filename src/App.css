@@ -42,6 +42,13 @@
 .c-pagination li a {
   cursor: pointer;
 }
+.c-pagination li.selected {
+  font-weight: 700;
+}
+.c-pagination .previous.disabled,
+.c-pagination .next.disabled {
+  display: none;
+}
 .c-subtitle {
   margin: 0 0 18px;
 }

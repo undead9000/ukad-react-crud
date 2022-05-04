@@ -80,7 +80,7 @@ function App({ itemsPerPage }) {
 
       if (urlData) {
         const urlParams = new URLSearchParams(urlData);
-        const currentPage = Number(urlParams.get("page") - 1);
+        const currentPage = Number(urlParams.get("pageNumber") - 1);
         const newOffset = (currentPage * itemsPerPage) % items.length;
         const endOffset = newOffset + itemsPerPage;
         setItemOffset(newOffset);
@@ -105,7 +105,7 @@ function App({ itemsPerPage }) {
         "//" +
         window.location.host +
         window.location.pathname +
-        "?page=" +
+        "?pageNumber=" +
         Number(event.selected + 1);
       window.history.pushState({ path: refresh }, "", refresh);
     } else {
